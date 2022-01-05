@@ -20,7 +20,7 @@ class PluginUiServer extends HomebridgePluginUiServer {
     this.onRequest('/getCachedAccessories', async () => {
       try {
         // Define the plugin and create the array to return
-        const plugin = 'homebridge-noip';
+        const plugin = 'homebridge-tuya-camera';
         const devicesToReturn = [];
 
         // The path and file of the cached accessories

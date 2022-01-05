@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Homebridge Discord Channel for No-IP
+  - name: Homebridge Discord Channel for Tuya
     url: https://discord.gg/8fpZA4S
     about: Please ask and answer questions here.
-  - name: Homebridge-noip - Pull Requests
-    url: https://github.com/donavanbecker/homebridge-noip/pulls
+  - name: Homebridge-tuya-camera - Pull Requests
+    url: https://github.com/donavanbecker/homebridge-tuya-camera/pulls
     about: Please report security vulnerabilities here.

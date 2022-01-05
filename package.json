@@ -2,7 +2,7 @@
   "displayName": "Homebridge Tuya Camera",
   "name": "homebridge-tuya-camera",
   "version": "0.0.1",
-  "description": "The [Homebridge](https://homebridge.io) No-IP plugin allows you to update your [No-IP](http://noip.com) hostname(s) for your homebridge instance.",
+  "description": "The [Homebridge](https://homebridge.io) Tuya Camera plugin allows you to get the rtsp or hls stream for your Tuya Cameras.",
   "author": "donavanbecker",
   "license": "Apache-2.0",
   "repository": {
@@ -13,15 +13,15 @@
     "url": "https://github.com/donavanbecker/homebridge-tuya-camera/issues"
   },
   "engines": {
-    "homebridge": "^1.3.8",
-    "node": "^14.18.2 || ^16.12.1"
+    "homebridge": "^1.3.9",
+    "node": "^14.18.2 || ^16.13.1"
   },
   "main": "dist/index.js",
   "scripts": {
     "check": "npm install && npm outdated",
     "update": "ncu -u && npm update && npm install",
     "lint": "eslint src/**.ts",
-    "watch": "npm run build && npm link && nodemon",
+    "watch": "npm run build && npm link && sudo hb-service restart",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build"
   },
@@ -33,6 +33,8 @@
   ],
   "keywords": [
     "homebridge-plugin",
+    "tuya-camera",
+    "tuya camera",
     "tuya",
     "camera",
     "rtsp"
@@ -40,24 +42,23 @@
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^0.0.19",
     "axios": "^0.24.0",
-    "crypto-js": "^4.1.1",
-    "public-ip": "^4.0.4",
-    "rxjs": "^7.4.0",
+    "crypto-js": "^4.0.0",
+    "rxjs": "^7.5.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@types/crypto-js": "^4.0.2",
-    "@types/node": "^16.11.11",
+    "@types/crypto-js": "^4.1.0",
+    "@types/node": "^17.0.8",
     "@types/uuid": "^8.3.3",
-    "@typescript-eslint/eslint-plugin": "^5.5.0",
-    "@typescript-eslint/parser": "^5.5.0",
-    "eslint": "^8.4.0",
-    "homebridge": "^1.3.8",
+    "@typescript-eslint/eslint-plugin": "^5.9.0",
+    "@typescript-eslint/parser": "^5.9.0",
+    "eslint": "^8.6.0",
+    "homebridge": "^1.3.9",
     "nodemon": "^2.0.15",
-    "npm-check-updates": "^12.0.2",
+    "npm-check-updates": "^12.1.0",
     "rimraf": "^3.0.2",
     "ts-node": "^10.4.0",
-    "typescript": "^4.5.2",
+    "typescript": "^4.5.4",
     "typescript-axios-wb": "^1.0.3"
   }
 }

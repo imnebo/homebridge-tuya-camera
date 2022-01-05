@@ -100,10 +100,10 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
       throw new Error('Missing your Tuya Password');
     }
     if (!this.config.accessId) {
-      throw new Error('Missing your Tuya Password');
+      throw new Error('Missing your Tuya accessId');
     }
-    if (!this.config.accessKey) {
-      throw new Error('Missing your Tuya Password');
+    if (!this.config.accesskey) {
+      throw new Error('Missing your Tuya accesskey');
     }
   }
 
