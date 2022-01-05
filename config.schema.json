@@ -1,0 +1,156 @@
+{
+  "pluginAlias": "TuyaCamera",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "headerDisplay": "<p align='center'><img width='250px' src='https://raw.githubusercontent.com/donavanbecker/homebridge-noip/latest/noip/Homebridge_x_No-IP.svg'></p>\n\nThe **Homebridge No-IP** plugin allows you to update your No-IP hostnames. \n\nTo get started link your No-IP account using the button below.",
+  "footerDisplay": "Your Tuya account has been linked. Please raise any issues on our [project page](https://github.com/donavanbecker/homebridge-tuya-camera/issues).\n\nIf you would like to have other features, fill out [Feature Request Form](https://github.com/donavanbecker/homebridge-tuya-camera/issues/new?assignees=&labels=&template=feature_request.md).",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "default": "TuyaCamera",
+        "required": true
+      },
+      "username": {
+        "title": "Username",
+        "type": "string",
+        "required": true
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "required": true
+      },
+      "accessId": {
+        "title": "Access ID",
+        "type": "string",
+        "required": true
+      },
+      "accessKey": {
+        "title": "Access Key",
+        "type": "string",
+        "required": true
+      },
+      "lang": {
+        "title": "Language Code",
+        "type": "string",
+        "default": "en",
+        "description": "Your two letter language code",
+        "required": true
+      },
+      "projectType": {
+        "title": "Project Type",
+        "type": "string",
+        "default": "form",
+        "oneOf": [{
+            "title": "PaaS",
+            "enum": ["2"]
+          },
+          {
+            "title": "Custom",
+            "enum": ["1"]
+          }
+        ],
+        "required": true
+      },
+      "appSchema": {
+        "title": "PaaS Platform",
+        "type": "string",
+        "default": "form",
+        "oneOf": [{
+            "title": "Tuya Smart",
+            "enum": ["tuyaSmart"]
+          },
+          {
+            "title": "Smart Life",
+            "enum": ["smartlife"]
+          }
+        ],
+        "required": true
+      },
+      "countryCode": {
+        "title": "Country Code",
+        "type": "number",
+        "default": "",
+        "description": "Your two integer country code",
+        "required": true
+      },
+      "refreshRate": {
+        "title": "Refresh Rate",
+        "type": "number",
+        "minimum": 1800,
+        "placeholder": 1800,
+        "description": "Indicates the number of seconds between polls of the No-IP service."
+      },
+      "debug": {
+        "title": "Logging Settings",
+        "type": "string",
+        "description": "Enble 'Device' or 'Debug' logging.",
+        "oneOf": [
+          {
+            "title": "Enable Debug Logging",
+            "enum": [
+              "debug"
+            ]
+          },
+          {
+            "title": "Enable Device Logging",
+            "enum": [
+              "device"
+            ]
+          }
+        ],
+        "required": false
+      },
+      "disablePlugin": {
+        "title": "Disable Plugin",
+        "type": "boolean",
+        "description": "DO NOT USE UNLESS YOU WANT TO REMOVE ACCESSORIES FROM CACHE."
+      }
+    }
+  },
+  "layout": [
+    {
+      "type": "fieldset",
+      "title": "Tuya Account Info",
+      "expandable": true,
+      "expanded": true,
+      "items": [
+        "username",
+        "password",
+        "accessId",
+        "accessKey"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Hostname",
+      "expandable": true,
+      "expanded": true,
+      "items": [
+        "hostname"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<h5>Refresh Rate</h5><em class='primary-text'>Refresh Rate indicates the number of seconds between polls of the No-IP service.</em>"
+        },
+        {
+          "key": "refreshRate",
+          "notitle": true
+        },
+        "debug",
+        "disablePlugin"
+      ]
+    }
+  ]
+}
