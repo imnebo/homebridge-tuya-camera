@@ -21,7 +21,7 @@
     "check": "npm install && npm outdated",
     "update": "ncu -u && npm update && npm install",
     "lint": "eslint src/**.ts",
-    "watch": "npm run build && npm link && sudo hb-service restart",
+    "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build"
   },
