@@ -1,8 +1,8 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, Service, Characteristic } from 'homebridge';
-import { PLATFORM_NAME, PLUGIN_NAME, TuyaCameraPlatformConfig, CountryUtil } from './settings';
-import { TuyaCamera } from './devices/camera';
+import { TuyaCameraPlatformConfig, CountryUtil, device } from './settings';
 import axios from 'axios';
 import Crypto from 'crypto-js';
+import { interval } from 'rxjs';
 
 /**
  * HomebridgePlatform
@@ -30,9 +30,11 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
   deviceArr!: Array<any>;
   devices: any;
   debugMode!: boolean;
+  platformLogging?: string;
 
   constructor(public readonly log: Logger, public readonly config: TuyaCameraPlatformConfig, public readonly api: API) {
-    this.debug('Finished initializing platform:', this.config.name);
+    this.logs();
+    this.debugLog('Finished initializing platform:', this.config.name);
     // only load if configured
     if (!this.config) {
       return;
@@ -40,36 +42,52 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
 
     // HOOBS notice
     if (__dirname.includes('hoobs')) {
-      this.log.warn('This plugin has not been tested under HOOBS, it is highly recommended that ' +
+      this.warnLog('This plugin has not been tested under HOOBS, it is highly recommended that ' +
         'you switch to Homebridge: https://git.io/Jtxb0');
     }
 
     // verify the config
     try {
       this.verifyConfig();
-      this.debug('Config OK');
+      this.debugLog('Config OK');
     } catch (e: any) {
-      this.log.error(JSON.stringify(e.message));
-      this.debug(JSON.stringify(e));
+      this.errorLog(JSON.stringify(e.message));
+      this.debugLog(JSON.stringify(e));
       return;
     }
-
-    //this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
     this.api.on('didFinishLaunching', async () => {
-      log.debug('Executed didFinishLaunching callback');
+      this.debugLog('Executed didFinishLaunching callback');
       // run the method to discover / register your devices as accessories
       try {
         this.discoverDevices();
       } catch (e: any) {
-        this.log.error('Failed to Discover Devices.', JSON.stringify(e.message));
-        this.debug(JSON.stringify(e));
+        this.errorLog('Failed to Discover Devices.', JSON.stringify(e.message));
+        this.debugLog(JSON.stringify(e));
       }
     });
+  }
+
+  logs() {
+    this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
+    if (this.config.options?.logging === 'debug' || this.config.options?.logging === 'standard' || this.config.options?.logging === 'none') {
+      this.platformLogging = this.config.options!.logging;
+      if (this.debugMode) {
+        this.warnLog(`Using Config Logging: ${this.platformLogging}`);
+      }
+    } else if (this.debugMode) {
+      if (this.debugMode) {
+        this.warnLog('Using debugMode Logging');
+      }
+      this.platformLogging = 'debugMode';
+    } else {
+      this.warnLog('Using Standard Logging');
+      this.platformLogging = 'standard';
+    }
   }
 
   /**
@@ -77,7 +95,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
    * It should be used to setup event handlers for characteristics and update respective values.
    */
   configureAccessory(accessory: PlatformAccessory) {
-    this.log.info('Loading accessory from cache:', accessory.displayName);
+    this.infoLog('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
@@ -90,7 +108,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     if (!this.config.refreshRate) {
       // default 900 seconds (15 minutes)
       this.config.refreshRate! = 300;
-      this.log.warn('Using Default Refresh Rate of 30 seconds.');
+      this.warnLog('Using Default Refresh Rate of 30 seconds.');
     }
 
     if (!this.config.username) {
@@ -170,8 +188,10 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     const devicesFunctions: any = [];
     for (const ids of deviceIds) {
       const functions = await this.getDevicesFunctions(ids);
-      this.debug(JSON.stringify(functions));
-      //devicesFunctions.push.spread(devicesFunctions, functions);
+      if (this.platformLogging?.includes('debug')) {
+        this.debugLog(JSON.stringify(functions));
+      }
+      // devicesFunctions.push.spread(devicesFunctions, functions);
     }
     let devices: any = [];
     if (devicesFunctions) {
@@ -240,32 +260,36 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
   }
 
   // Gets the individual device state
-  async getCameraRSTP(deviceID: any) {
+  async getCameraRSTP(device, deviceID: any) {
     const cameraparams = {
       'type': 'rtsp',
     };
     const response = await this.post(`/v1.0/users/${this.tokenInfo.uid}/devices/${deviceID}/stream/actions/allocate`, cameraparams);
+    this.infoLog(`RTSP Stream for ${device.name}: ${JSON.stringify(response.result.url)}`);
     return response.result.url;
   }
 
   // Gets the individual device state
-  async getCameraHLS(deviceID: any) {
+  async getCameraHLS(device: device, deviceID: any) {
     const cameraparams = {
       'type': 'hls',
     };
     const response = await this.post(`/v1.0/users/${this.tokenInfo.uid}/devices/${deviceID}/stream/actions/allocate`, cameraparams);
+    this.infoLog(`HLS Stream for ${device.name}: ${JSON.stringify(response.result.url)}`);
     return response.result.url;
   }
 
-  async request(method: string | any, path: string, params = null, body = null) {
+  async request(method: any, path: string, params = null, body = null) {
 
     try {
       await this.refreshAccessTokenIfNeed(path);
     } catch (e: any) {
-      this.log.error(e);
-      this.log.error('Attention⚠️ ⚠️ ⚠️ ! You get an error!');
-      this.log.error('Please confirm that the Access ID and Access Secret of the Smart Home PaaS project you are using were created after May 25, 2021.');
-      this.log.error('Please linked devices by using Tuya Smart or Smart Life app in your cloud project.');
+      this.errorLog('Attention⚠️ ⚠️ ⚠️ ! You get an error!');
+      this.errorLog('Please confirm that the Access ID and Access Secret of the Smart Home PaaS project you are using were created after May 25, 2021.');
+      this.errorLog('Please linked devices by using Tuya Smart or Smart Life app in your cloud project.');
+      if (this.platformLogging?.includes('debug')) {
+        this.errorLog(e);
+      }
       return;
     }
 
@@ -285,7 +309,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
       'devVersion': '1.5.0',
 
     };
-    this.debug(`TuyaOpenAPI request: method = ${method}, endpoint = ${this.endpoint}, path = ${path}, params = ${JSON.stringify(params)},`
+    this.debugLog(`TuyaOpenAPI request: method = ${method}, endpoint = ${this.endpoint}, path = ${path}, params = ${JSON.stringify(params)},`
       + ` body = ${JSON.stringify(body)}, headers = ${JSON.stringify(headers)}`);
 
     const res: any = await axios({
@@ -297,30 +321,36 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
       data: body,
     });
 
-    this.debug(`TuyaOpenAPI response: ${JSON.stringify(res.data)} path = ${path}`);
+    this.debugLog(`TuyaOpenAPI response: ${JSON.stringify(res.data)} path = ${path}`);
     return res.data;
   }
 
-  async get(path, params?) {
+  async get(path: string, params?: any) {
     return this.request('get', path, params, null);
   }
 
-  async post(path, params) {
+  async post(path: string, params?: any) {
     return this.request('post', path, null, params);
   }
 
-  async delete(path, params?) {
+  async delete(path: string, params?: any) {
     return this.request('delete', path, params, null);
   }
 
-  getSign(access_id, access_key, access_token = '', timestamp = 0, stringToSign) {
+  getSign(
+    access_id: TuyaCameraPlatformConfig['accessId'],
+    access_key: TuyaCameraPlatformConfig['accessKey'],
+    access_token = '',
+    timestamp = 0,
+    stringToSign: string,
+  ) {
     const message = access_id + access_token + `${timestamp}` + stringToSign;
-    const hash = Crypto.HmacSHA256(message, access_key);
+    const hash = Crypto.HmacSHA256(message, access_key!);
     const sign = hash.toString().toUpperCase();
     return sign;
   }
 
-  getStringToSign(method, path, params, body) {
+  getStringToSign(method: string, path: string, params: any, body: null) {
     const httpMethod: any = method.toUpperCase();
     let bodyStream: string | Crypto.lib.WordArray;
     if (body) {
@@ -336,7 +366,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     return result;
   }
 
-  getSignUrl(path, obj) {
+  getSignUrl(path: string, obj: { [x: string]: string; }) {
     if (!obj) {
       return path;
     } else {
@@ -344,7 +374,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
       for (i in obj) {
         url += '&' + i + '=' + obj[i];
       }
-      return path + '?' + url.substr(1);
+      return path + '?' + url.substring(1);
     }
   }
 
@@ -356,8 +386,8 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     try {
       this.devices = await this.getDevices();
     } catch (e: any) {
-      this.debug(JSON.stringify(e.message));
-      this.log.error('Failed to get device information. Please check if the config.json is correct.');
+      this.debugLog(JSON.stringify(e.message));
+      this.errorLog('Failed to get device information. Please check if the config.json is correct.');
       return;
     }
 
@@ -365,103 +395,69 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
       const deviceType = device.category;
       switch (deviceType) {
         case 'sp':
-          this.log.info(`Discovered ${device.name}`);
-          this.createCamera(device);
+          this.debugLog(`Discovered ${device.name}`);
+          this.refreshStream(device);
+          interval(this.config!.refreshRate! * 1000)
+            .subscribe(() => {
+              this.refreshStream(device);
+            });
           break;
         default:
-          this.log.info(`Discovered ${device.name}`);
+          this.infoLog(`Discovered ${device.name}`);
           break;
       }
     }
 
   }
 
-  private async createCamera(device) {
-    const uuid = this.api.hap.uuid.generate(device.id);
-
-    // see if an accessory with the same uuid has already been registered and restored from
-    // the cached devices we stored in the `configureAccessory` method above
-    const existingAccessory = this.accessories.find((accessory) => accessory.UUID === uuid);
-
-    if (existingAccessory) {
-      // the accessory already exists
-      if (!this.config.disablePlugin) {
-        this.log.info(`Restoring existing accessory from cache: ${existingAccessory.displayName}`);
-
-        // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
-        existingAccessory.displayName = device.name;
-        existingAccessory.context.device = device;
-        existingAccessory.context.serialNumber;
-        existingAccessory.context.model = device.model;
-        existingAccessory.context.firmwareRevision = this.version;
-        this.api.updatePlatformAccessories([existingAccessory]);
-        // create the accessory handler for the restored accessory
-        // this is imported from `platformAccessory.ts`
-        new TuyaCamera(this, existingAccessory, device);
-        this.debug(`uuid: ${device.id}`);
-      } else {
-        this.unregisterPlatformAccessories(existingAccessory);
+  private refreshStream(device: device) {
+    try {
+      this.getCameraHLS(device, device.id);
+      this.getCameraRSTP(device, device.id);
+    } catch (e: any) {
+      this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection`);
+      if (this.platformLogging?.includes('debug')) {
+        this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection,`
+          + ` Error Message: ${JSON.stringify(e.message)}`);
+        this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection,`
+          + ` Error: ${JSON.stringify(e)}`);
       }
-    } else if (!this.config.disablePlugin) {
-      // the accessory does not yet exist, so we need to create it
-      this.log.info(`Adding new accessory: ${device.name}`);
-
-      // create a new accessory
-      const accessory = new this.api.platformAccessory(device.name, uuid);
-
-      // store a copy of the device object in the `accessory.context`
-      // the `context` property can be used to store any data about the accessory you may need
-      accessory.displayName = device.name;
-      accessory.context.device = device;
-      accessory.context.serialNumber;
-      accessory.context.model = device.model;
-      accessory.context.firmwareRevision = this.version;
-      // create the accessory handler for the newly create accessory
-      // this is imported from `platformAccessory.ts`
-      new TuyaCamera(this, accessory, device);
-      this.debug(`uuid: ${device.id}`);
-
-      // link the accessory to your platform
-      this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      this.accessories.push(accessory);
-    } else {
-      if (this.config.debug === 'device') {
-        this.log.error(`Unable to Register new device: ${device}`);
-        this.log.error(`Check Config, Plugin Disabled: ${this.config.disablePlugin}`);
-      }
-    }
-  }
-
-  public unregisterPlatformAccessories(existingAccessory: PlatformAccessory) {
-    // remove platform accessories when no longer present
-    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-    this.log.warn('Removing existing accessory from cache:', existingAccessory.displayName);
-  }
-
-  /**
-   * If debug level logging is turned on, log to log.info
-   * Otherwise send debug logs to log.debug
-   * this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
-   */
-  debug(...log: any[]) {
-    if (this.config.debug === 'debug') {
-      this.log.info('[DEBUG]', String(...log));
-    } else {
-      this.log.debug(String(...log));
     }
   }
 
   /**
    * If device level logging is turned on, log to log.warn
-   * Otherwise send debug logs to log.debug
+   * Otherwise send debug logs to debugLog
    */
-  device(...log: any[]) {
-    if (this.config.debug === 'device') {
-      this.log.warn('[DEVICE]', String(...log));
-    } else if (this.config.debug === 'debug') {
-      this.log.info('[DEBUG]', String(...log));
-    } else {
-      this.log.debug(String(...log));
+  infoLog(...log: any[]) {
+    if (this.enablingPlatfromLogging()) {
+      this.log.info(String(...log));
     }
+  }
+
+  warnLog(...log: any[]) {
+    if (this.enablingPlatfromLogging()) {
+      this.log.warn(String(...log));
+    }
+  }
+
+  errorLog(...log: any[]) {
+    if (this.enablingPlatfromLogging()) {
+      this.log.error(String(...log));
+    }
+  }
+
+  debugLog(...log: any[]) {
+    if (this.enablingPlatfromLogging()) {
+      if (this.platformLogging === 'debugMode') {
+        this.log.debug(String(...log));
+      } else if (this.platformLogging === 'debug') {
+        this.log.info('[DEBUG]', String(...log));
+      }
+    }
+  }
+
+  enablingPlatfromLogging(): boolean {
+    return this.platformLogging?.includes('debug') || this.platformLogging === 'standard';
   }
 }
