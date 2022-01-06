@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. This project uses [Semantic Versioning](https://semver.org/)
 
-## [Future Release - Version 1.0.0](https://github.com/donavanbecker/homebridge-tuya-camera/releases/tag/v1.0.0) (2021-11-13)
+## [Future Release - Version 1.0.0](https://github.com/donavanbecker/homebridge-tuya-camera/releases/tag/v1.0.0) (2022-XX-XX)
 
 ## What's Changed
 * Offical release of homebridge-tuya-camera.
@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file. This projec
 
 **Full Changelog**: https://github.com/OpenWonderLabs/homebridge-switchbot/compare/v0.1.0...v1.0.0
 
-## [Version 0.0.1](https://github.com/donavanbecker/homebridge-tuya-camera/releases/tag/v0.1.0) (2021-09-10)
+## [Version 0.0.1](https://github.com/donavanbecker/homebridge-tuya-camera/releases/tag/v0.1.0) (2022-01-05)
 
 ## What's Changed
 * Initial release of homebridge-tuy-camera.
