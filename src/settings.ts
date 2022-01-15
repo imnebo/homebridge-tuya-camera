@@ -25,7 +25,11 @@ export interface TuyaCameraPlatformConfig extends PlatformConfig {
   projectType?: string;
   appSchema?: string;
   countryCode?: number;
-  debug?: string;
+  localhttp?: string;
+  porthttp?: number;
+  HLSorRTSP?: string;
+  refreshRate?: number;
+  logging?: string;
 }
 
 export type device = {
