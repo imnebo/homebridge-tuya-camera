@@ -260,7 +260,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
   }
 
   // Gets the individual device state
-  async getCameraRSTP(device, deviceID: any) {
+  async getCameraRTSP(device, deviceID: any) {
     const cameraparams = {
       'type': 'rtsp',
     };
@@ -413,7 +413,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
   private refreshStream(device: device) {
     try {
       this.getCameraHLS(device, device.id);
-      this.getCameraRSTP(device, device.id);
+      this.getCameraRTSP(device, device.id);
     } catch (e: any) {
       this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection`);
       if (this.platformLogging?.includes('debug')) {

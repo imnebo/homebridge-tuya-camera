@@ -47,10 +47,6 @@
         "oneOf": [{
             "title": "PaaS",
             "enum": ["2"]
-          },
-          {
-            "title": "Custom",
-            "enum": ["1"]
           }
         ],
         "required": true
@@ -62,10 +58,6 @@
         "oneOf": [{
             "title": "Tuya Smart",
             "enum": ["tuyaSmart"]
-          },
-          {
-            "title": "Smart Life",
-            "enum": ["smartlife"]
           }
         ],
         "required": true
