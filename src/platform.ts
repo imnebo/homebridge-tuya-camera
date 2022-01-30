@@ -2,7 +2,6 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, Service, Charact
 import { TuyaCameraPlatformConfig, CountryUtil, device } from './settings';
 import axios from 'axios';
 import Crypto from 'crypto-js';
-import http from 'http';
 import { interval } from 'rxjs';
 
 /**
@@ -158,7 +157,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
   }
 
   //Gets the list of devices under the associated user
-  async TuyaSHOpenAPI() {
+  async getDevices() {
     this.countryCode = this.config.countryCode!;
     this.endpoint = (this.config.countryCode) ? new CountryUtil().getEndPointWithCountryCode(this.config.countryCode) : 'https://openapi.tuyaus.com';
     this.access_id = this.config.accessId;
@@ -206,71 +205,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     return devices;
   }
 
-  async TuyaOpenAPI() {
-    this.access_id = this.config.accessId;
-    this.access_key = this.config.accessKey;
-    this.lang = this.config.lang;
-
-    this.assetIDArr = [];
-    this.deviceArr = [];
-
-    this.tokenInfo = {
-      access_token: '',
-      refresh_token: '',
-      uid: '',
-      expire: 0,
-    };
-
-    const assets = await this.get_assets();
-
-    let deviceDataArr: any = [];
-    const deviceIdArr: any = [];
-    for (const asset of assets) {
-      const res = await this.getDeviceIDList(asset.asset_id);
-      deviceDataArr = deviceDataArr.concat(res);
-    }
-
-    for (const deviceData of deviceDataArr) {
-      deviceIdArr.push(deviceData.device_id);
-    }
-
-    const devicesInfoArr: any = await this.getDeviceListInfo(deviceIdArr);
-    const devicesStatusArr: any = await this.getDeviceListStatus(deviceIdArr);
-
-    const devices: any = [];
-    for (let i = 0; i < devicesInfoArr.length; i++) {
-      const functions = await this.getDeviceFunctions(devicesInfoArr[i].id);
-      devices.push(Object.assign({}, devicesInfoArr[i], functions, devicesStatusArr.find((j) => j.id === devicesInfoArr[i].id)));
-    }
-    return devices;
-  }
-
-  // Gets a list of human-actionable assets
-  async get_assets() {
-    const res = await this.get('/v1.0/iot-03/users/assets', {
-      'parent_asset_id': null,
-      'page_no': 0,
-      'page_size': 100,
-    });
-    return res.result.assets;
-  }
-
-  // Query the list of device IDs under the asset
-  async getDeviceIDList(assetID) {
-    const res = await this.get(`/v1.0/iot-02/assets/${assetID}/devices`);
-    return res.result.list;
-  }
-
-  // Batch access to device status
-  async getDeviceListStatus(devIds = []) {
-    if (devIds.length === 0) {
-      return [];
-    }
-    const res = await this.get('/v1.0/iot-03/devices/status', { 'device_ids': devIds.join(',') });
-    return res.result;
-  }
-
-  async refactoringIdsGroup(array: string | any[], subGroupLength: number) {
+  refactoringIdsGroup(array: string | any[], subGroupLength: number) {
     let index: any = 0;
     const newArray: any = [];
     while (index < array.length) {
@@ -281,12 +216,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
 
   // single device gets the instruction set
   async getDeviceFunctions(deviceID: any) {
-    let res: { result: any; };
-    if (this.config.options.projectType === '1') {
-      res = await this.get(`/v1.0/iot-03/devices/${deviceID}/functions`);
-    } else {
-      res = await this.get(`/v1.0/devices/${deviceID}/functions`);
-    }
+    const res = await this.get(`/v1.0/devices/${deviceID}/functions`);
     return res.result;
   }
 
@@ -298,12 +228,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
 
   // Get individual device details
   async getDeviceInfo(deviceID: any) {
-    let res: { result: any; };
-    if (this.config.options.projectType === '1') {
-      res = await this.get(`/v1.0/iot-03/devices/${deviceID}`);
-    } else {
-      res = await this.get(`/v1.0/devices/${deviceID}`);
-    }
+    const res = await this.get(`/v1.0/devices/${deviceID}`);
     return res.result;
   }
 
@@ -312,23 +237,13 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     if (devIds.length === 0) {
       return [];
     }
-    let res: { result: { list: any; }; };
-    if (this.config.options.projectType === '1') {
-      res = await this.get('/v1.0/iot-03/devices', { 'device_ids': devIds.join(',') });
-    } else {
-      res = await this.get('/v1.0/devices', { 'device_ids': devIds.join(',') });
-    }
+    const res = await this.get('/v1.0/devices', { 'device_ids': devIds.join(',') });
     return res.result.list;
   }
 
   // Gets the individual device state
   async getDeviceStatus(deviceID: any) {
-    let res: { result: any; };
-    if (this.config.options.projectType === '1') {
-      res = await this.get(`/v1.0/iot-03/devices/${deviceID}/status`);
-    } else {
-      res = await this.get(`/v1.0/devices/${deviceID}/status`);
-    }
+    const res = await this.get(`/v1.0/devices/${deviceID}/status`);
     return res.result;
   }
 
@@ -340,24 +255,18 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
 
   // sendCommand
   async sendCommand(deviceID: any, params: any) {
-    let res: { result: any; };
-    if (this.config.options.projectType === '1') {
-      res = await this.post(`/v1.0/iot-03/devices/${deviceID}/commands`, params);
-    } else {
-      res = await this.post(`/v1.0/devices/${deviceID}/commands`, params);
-    }
+    const res = await this.post(`/v1.0/devices/${deviceID}/commands`, params);
     return res.result;
   }
 
   // Gets the individual device state
-  async getCameraRSTP(device, deviceID: any) {
+  async getCameraRTSP(device, deviceID: any) {
     const cameraparams = {
       'type': 'rtsp',
     };
     const response = await this.post(`/v1.0/users/${this.tokenInfo.uid}/devices/${deviceID}/stream/actions/allocate`, cameraparams);
     this.infoLog(`RTSP Stream for ${device.name}: ${JSON.stringify(response.result.url)}`);
-    const URL = response.result.url;
-    return URL;
+    return response.result.url;
   }
 
   // Gets the individual device state
@@ -367,87 +276,52 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
     };
     const response = await this.post(`/v1.0/users/${this.tokenInfo.uid}/devices/${deviceID}/stream/actions/allocate`, cameraparams);
     this.infoLog(`HLS Stream for ${device.name}: ${JSON.stringify(response.result.url)}`);
-    const URL = response.result.url;
-    return URL;
+    return response.result.url;
   }
 
   async request(method: any, path: string, params = null, body = null) {
-    let res: { data: any; };
-    if (this.config.options.projectType === '1') {
+
+    try {
       await this.refreshAccessTokenIfNeed(path);
-
-      const now = new Date().getTime();
-      const access_token = this.tokenInfo.access_token || '';
-      const stringToSign = this.getStringToSign(method, path, params, body);
-      const headers = {
-        't': `${now}`,
-        'client_id': this.access_id,
-        'Signature-Headers': 'client_id',
-        'sign': this.getSign(this.access_id, this.access_key, access_token, now, await stringToSign),
-        'sign_method': 'HMAC-SHA256',
-        'access_token': access_token,
-        'lang': this.lang,
-        'dev_lang': 'javascript',
-        'dev_channel': 'homebridge',
-        'devVersion': '1.5.0',
-
-      };
-      this.debugLog(`TuyaOpenAPI request: method = ${method}, endpoint = ${this.endpoint}, path = ${path}, `
-        + `params = ${JSON.stringify(params)}, body = ${JSON.stringify(body)}, headers = ${JSON.stringify(headers)}`);
-
-      res = await axios({
-        baseURL: this.endpoint,
-        url: path,
-        method: method,
-        headers: headers,
-        params: params,
-        data: body,
-      });
-
-      this.debugLog(`TuyaOpenAPI response: ${JSON.stringify(res.data)} path = ${path}`);
-    } else {
-      try {
-        await this.refreshAccessTokenIfNeed(path);
-      } catch (e: any) {
-        this.errorLog('Attention⚠️ ⚠️ ⚠️ ! You get an error!');
-        this.errorLog('Please confirm that the Access ID and Access Secret of the Smart Home PaaS project you are using were created after May 25, 2021.');
-        this.errorLog('Please linked devices by using Tuya Smart or Smart Life app in your cloud project.');
-        if (this.platformLogging?.includes('debug')) {
-          this.errorLog(e);
-        }
-        return;
+    } catch (e: any) {
+      this.errorLog('Attention⚠️ ⚠️ ⚠️ ! You get an error!');
+      this.errorLog('Please confirm that the Access ID and Access Secret of the Smart Home PaaS project you are using were created after May 25, 2021.');
+      this.errorLog('Please linked devices by using Tuya Smart or Smart Life app in your cloud project.');
+      if (this.platformLogging?.includes('debug')) {
+        this.errorLog(e);
       }
-
-      const now = new Date().getTime();
-      const access_token = this.tokenInfo.access_token || '';
-      const stringToSign = this.getStringToSign(method, path, params, body);
-      const headers = {
-        't': `${now}`,
-        'client_id': this.access_id,
-        'Signature-Headers': 'client_id',
-        'sign': this.getSign(this.access_id, this.access_key, access_token, now, stringToSign),
-        'sign_method': 'HMAC-SHA256',
-        'access_token': access_token,
-        'lang': this.lang,
-        'dev_lang': 'javascript',
-        'dev_channel': 'homebridge',
-        'devVersion': '1.5.0',
-
-      };
-      this.debugLog(`TuyaOpenAPI request: method = ${method}, endpoint = ${this.endpoint}, path = ${path}, params = ${JSON.stringify(params)},`
-        + ` body = ${JSON.stringify(body)}, headers = ${JSON.stringify(headers)}`);
-
-      res = await axios({
-        baseURL: this.endpoint,
-        url: path,
-        method: method,
-        headers: headers,
-        params: params,
-        data: body,
-      });
-
-      this.debugLog(`TuyaOpenAPI response: ${JSON.stringify(res.data)} path = ${path}`);
+      return;
     }
+
+    const now = new Date().getTime();
+    const access_token = this.tokenInfo.access_token || '';
+    const stringToSign = this.getStringToSign(method, path, params, body);
+    const headers = {
+      't': `${now}`,
+      'client_id': this.access_id,
+      'Signature-Headers': 'client_id',
+      'sign': this.getSign(this.access_id, this.access_key, access_token, now, stringToSign),
+      'sign_method': 'HMAC-SHA256',
+      'access_token': access_token,
+      'lang': this.lang,
+      'dev_lang': 'javascript',
+      'dev_channel': 'homebridge',
+      'devVersion': '1.5.0',
+
+    };
+    this.debugLog(`TuyaOpenAPI request: method = ${method}, endpoint = ${this.endpoint}, path = ${path}, params = ${JSON.stringify(params)},`
+      + ` body = ${JSON.stringify(body)}, headers = ${JSON.stringify(headers)}`);
+
+    const res: any = await axios({
+      baseURL: this.endpoint,
+      url: path,
+      method: method,
+      headers: headers,
+      params: params,
+      data: body,
+    });
+
+    this.debugLog(`TuyaOpenAPI response: ${JSON.stringify(res.data)} path = ${path}`);
     return res.data;
   }
 
@@ -510,11 +384,7 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
    */
   async discoverDevices() {
     try {
-      if (this.config.options.projectType === '1') {
-        this.devices = await this.TuyaOpenAPI();
-      } else {
-        this.devices = await this.TuyaSHOpenAPI();
-      }
+      this.devices = await this.getDevices();
     } catch (e: any) {
       this.debugLog(JSON.stringify(e.message));
       this.errorLog('Failed to get device information. Please check if the config.json is correct.');
@@ -540,20 +410,10 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
 
   }
 
-  async refreshStream(device: device) {
+  private refreshStream(device: device) {
     try {
-      switch (this.config.HLSorRTSP) {
-        case 'rstp':
-          // eslint-disable-next-line no-case-declarations
-          const rstp = this.getCameraRSTP(device, device.id);
-          await this.httpRSTPServer(rstp);
-          break;
-        case 'hls':
-        default:
-          // eslint-disable-next-line no-case-declarations
-          const hls = this.getCameraHLS(device, device.id);
-          await this.httpHLSServer(hls);
-      }
+      this.getCameraHLS(device, device.id);
+      this.getCameraRTSP(device, device.id);
     } catch (e: any) {
       this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection`);
       if (this.platformLogging?.includes('debug')) {
@@ -562,47 +422,6 @@ export class TuyaCameraPlatform implements DynamicPlatformPlugin {
         this.errorLog(`Tuya Camera: ${device.name} failed refreshStatus with TuyaOpenAPI Connection,`
           + ` Error: ${JSON.stringify(e)}`);
       }
-    }
-  }
-
-  async httpHLSServer(hls: Promise<any>) {
-    const hostname = 'localhost';
-    const port = this.config.porthttp || '8080';
-
-    this.infoLog('Setting up ' + (this.config.localhttp ? 'localhost-only ' : '') +
-      'HTTP server on port ' + port + '...');
-
-    const requestListener = function (_req: any, res: { writeHead: (arg0: number) => void; end: (arg0: Promise<string>) => void; }) {
-      res.writeHead(200);
-      res.end(hls);
-    };
-
-    const server = http.createServer(requestListener);
-    server.listen(this.config.http?.porthttp, hostname, () => {
-      this.infoLog(`Server is running on http://${hostname}:${port}`);
-    });
-  }
-
-  async httpRSTPServer(rtsp: Promise<any>) {
-    if (this.config.http?.porthttp) {
-      this.infoLog('Setting up ' + (this.config.http?.localhttp ? 'localhost-only ' : '') +
-        'HTTP server on port ' + this.config.http?.porthttp + '...');
-      //const server = http.createServer();
-      const hostname = this.config.http?.localhttp ? 'localhost' : undefined;
-      const port = this.config.http?.porthttp ? '8181' : undefined;
-      //server.listen(this.config.http?.porthttp, hostname);
-
-
-      const requestListener = function (req: any, res: { writeHead: (arg0: number) => void; end: (arg0: Promise<string>) => void; }) {
-        res.writeHead(200);
-        res.end(rtsp);
-      };
-
-      const server = http.createServer(requestListener);
-      server.listen(this.config.http?.porthttp, hostname, () => {
-        this.infoLog(`Server is running on http://${hostname}:${port}`);
-      });
-
     }
   }
 

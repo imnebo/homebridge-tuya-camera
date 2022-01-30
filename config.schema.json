@@ -44,18 +44,9 @@
         "title": "Project Type",
         "type": "string",
         "default": "form",
-        "oneOf": [
-          {
+        "oneOf": [{
             "title": "PaaS",
-            "enum": [
-              "2"
-            ]
-          },
-          {
-            "title": "Custom",
-            "enum": [
-              "1"
-            ]
+            "enum": ["2"]
           }
         ],
         "required": true
@@ -64,18 +55,9 @@
         "title": "PaaS Platform",
         "type": "string",
         "default": "form",
-        "oneOf": [
-          {
+        "oneOf": [{
             "title": "Tuya Smart",
-            "enum": [
-              "tuyaSmart"
-            ]
-          },
-          {
-            "title": "Smart Life",
-            "enum": [
-              "smartlife"
-            ]
+            "enum": ["tuyaSmart"]
           }
         ],
         "required": true
@@ -86,37 +68,6 @@
         "default": "",
         "description": "Your two integer country code",
         "required": true
-      },
-      "porthttp": {
-        "title": "HTTP Port",
-        "type": "integer",
-        "placeholder": 8080,
-        "description": "The port to listen on for HTTP-based automation. If not set, HTTP support is not started."
-      },
-      "localhttp": {
-        "title": "HTTP Localhost Only",
-        "type": "boolean",
-        "description": "Only allow HTTP calls from localhost. Useful if using helper plugins that translate to HTTP."
-      },
-      "HLSorRTSP": {
-        "title": "HLS or RTSP",
-        "type": "string",
-        "default": "hls",
-        "required": true,
-        "oneOf": [
-          {
-            "title": "HLS",
-            "enum": [
-              "hls"
-            ]
-          },
-          {
-            "title": "RTSP",
-            "enum": [
-              "rtsp"
-            ]
-          }
-        ]
       },
       "refreshRate": {
         "title": "Refresh Rate",
@@ -166,17 +117,6 @@
         "projectType",
         "appSchema",
         "countryCode"
-      ]
-    },
-    {
-      "type": "fieldset",
-      "title": "HTTP Server",
-      "expandable": true,
-      "expanded": false,
-      "items": [
-        "localhttp",
-        "porthttp",
-        "HLSorRTSP"
       ]
     },
     {
